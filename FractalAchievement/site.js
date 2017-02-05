@@ -6,10 +6,9 @@
 /* Obtain player's API keys from input field on website and check how many were
 actually supplied (2 minimum), also check whether they are valid and not missing 
 permissions needed to access achievement status. */
-
 function getUserAPI(){
 	
-	// Loop over the elements in the form to obtain API keys
+	// Declare variables
     var apiKeyArray = [];
     var missingApi = 0;
     var elements = document.getElementById("apiform").elements;
@@ -22,24 +21,26 @@ function getUserAPI(){
         	missingApi++;
         }
     }
-    
+	
+	console.log("missing apis" + missingApi);
     
     // Check if user specified at least 2 API keys
     if(missingApi > 3){
-    	alert("Please specify at least 2 valid API keys to allow comparison.")
+		$('#error').text("Please specify at least 2 valid API keys to allow comparison.");
     }
-    
     // Verify that the first field is filled, this is required for finding the achievements
-    if(elements.item(0) == "")
+    else if(elements.item(0) == "" || elements.item(0) == undefined )
     {
-    	alert("Please fill in the first field with a valid API key.");
+    	$('#error').text("Please do not omit the first field.");
     }
-    
-    // If the first field is not empty and there are at least 2 API keys present,
-    // proceed with API key verification process.
-    else{
+    // If the first field is not empty and there are at least 2 API keys present
+    else if (missingApi <= 3 && elements.item(0) != ""){ 
     	
+		console.log("entered else, proceeding to validation");
+		
     	var apiStatus;
+		
+		// Validate API key for every key in array
     	for(var i = 0; i < apiKeyArray.length ; i++){
     		
     		console.log("Checking if API valid:" + apiKeyArray[i]);
@@ -54,207 +55,88 @@ function getUserAPI(){
     	
     	// If one or more of the API keys provided are missing permissions, abort.
     	if(apiStatus == false){
-    		alert("At least one API key is missing permissions or invalid.\nPlease make sure you are using a valid key that allows access of your achievmenents.")
+    		$('#error').text("One ore more API keys are either missing permissions or invalid.");
     	}
+		// If all API's passed verification, proceed
     	else{
-    		//alert("API VALID WOOHOO"); // Is always triggered for now due to validation bug.
+    		$('#error').text("API's verified, beginning achievement comparison.");
     		
-    		
-    		// Pass the arrray of apiKeys
-    		// They have been verified at this point, we only need to check if they are not empty
+    		// Pass the arrray of apiKeys. They have been verified at this point, we only need to check if they are not empty in the case that someone wants to compare less than five members
     		retrieveFractalAchievementStatus(apiKeyArray);
-    	}
-    	
+    	}	
     }
-    
 }
 
 
-/* Werkt niet naar behoren, ik krijg een 503 bij een invalid key dus ik mag dan 
-ook niet kijken wat ie returnt aan data. Ik moet kunnen controleren of ik een 503 
-error krijg in de request.*/
+/* Check if API key is of a valid format and if so, check if the needed permissions were given. */
 function verifyApi(apiKey){
 	
-		$.ajax({
-		type: "GET",
-		async: false,
-		url: "https://api.guildwars2.com/v2/tokeninfo?access_token=" + apiKey,
-		cache: false,
-		dataType: 'text',
-		
-			success: function (){},
-			error: function(){},
+		// Use regex to do sanity check 
+		if (/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{20}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/.test(apiKey)){
+
+			$.ajax({
+			type: "GET",
+			async: true,
+			url: "https://api.guildwars2.com/v2/tokeninfo?access_token=" + apiKey,
+			cache: false,
+			dataType: 'text',
 			
-			// Wait until request is done.
-			complete: function(data){
-				// Parse json object
-				var apiresult = JSON.parse(data.responseText);
-				// Check if it's a valid key
-				if(apiresult.text == "endpoint requires authentication")
+				success: function (){},
+				error: function(){
 					return false;
-				else
-					return true;
-			}    
-	});
-}
+				},
+				// Check if it's a valid key even if it passed regex
+				complete: function(data){
 
-
-/* With help of the achievment index, retrieve the actual status of the fractal achievement. 
-The numbers in the bits array indicate the completed indices of the achievement, ie index 0 
-is the first achievement.*/
-function retrieveFractalAchievementStatus(apiKeyArray){
-
-	// Dictionary to store account, achievementinfo pair
-	var accountAchievementDictionary = {};
-	var accountNameArray = []
-	
-	// Retrieve fractal achievements for every account.
-	for(var i = 0; i < apiKeyArray.length; i++){
-		if(apiKeyArray[i] != "" && apiKeyArray[i] != undefined){
-			
-			
-			console.log("Current API key in loop" + apiKeyArray[i]);
-			
-			// Retrieve the achievement information from the API
-			var achievementArray = retrieveAchievementAPI(apiKeyArray[i]);
-			
-			
-			// Get indices for this specific ApiKey because they differ
-			var indexArray = findFractalAchievementIndex(achievementArray);
-			
-			var fractalInitiate = [];
-			var fractalAdept = [];
-			var fractalExpert = [];
-			var fractalMaster = [];
-			
-			// Get achievement bits using the indices
-			fractalInitiate = achievementArray[indexArray[0]].bits;
-			fractalAdept = achievementArray[indexArray[1]].bits;
-			fractalExpert = achievementArray[indexArray[2]].bits;
-			fractalMaster = achievementArray[indexArray[3]].bits;
-			
-			// Concatenate arrays
-			var fractalTotal = fractalInitiate.concat(fractalAdept, fractalExpert, fractalMaster);
-			
-			// Get name and put it in the dictionary
-			var accountName = retrieveAccountName(apiKeyArray[i]);
-			accountNameArray[i] = accountName;
-			
-			accountAchievementDictionary[accountName] = fractalTotal;
-			console.log( "Hele array" + accountAchievementDictionary[accountName]);
-			
-			
-			// even om het te printen
-			var arr = accountAchievementDictionary[accountName];
-			var arrlength = arr.length;
-			var alles = "";
-			
-			for(var i = 0; i < arrlength; i++){
-				alles += (arr[i] + " ");
-			}
-			
-			console.log("Alles: " + alles);
-			
-			
+					var apiResult = JSON.parse(data.responseText);
+					console.log(apiResult);
+					
+					// If the key matches the expected format but is still invalid
+					if(apiResult.text && (apiResult.text.equals("endpoint requires authentication") || apiResult.text.equals("invalid key")))
+						return false;
+				
+					// If the permissions array exists in JSON
+					if(apiResult.permissions){
+						
+						var permissionCount = 0;
+						for(var i = 0; i <apiResult.permissions.length; i++){
+							
+							// Check for the necessary permissions
+							switch(apiResult.permissions[i]){
+								case "characters":
+									permissionCount++;
+									break;
+								case "account":
+									permissionCount++;
+									break;
+								case "builds":
+									permissionCount++;
+									break;
+								case "progression":
+									permissionCount++;
+									break;
+							}
+						}
+						
+						// Check if permission requirements were met
+						if(permissionCount == 4)
+							return true;
+						else
+							return false;
+					}
+				}    
+			});
 		}
-	}
+		// If API key didn't pass regex it's can never be valid
+		else{
+			return false;
+		}
 }
 
 
 
-/* Retrieves all information about all achievements of a given account. */
-function retrieveAchievementAPI(apiKey){
-	
-		var achievementArray;
-	
-		$.ajax({
-		type: "GET",
-		async: false,
-		url: "https://api.guildwars2.com/v2/account/achievements?access_token=" + apiKey,
-		cache: false,
-		dataType: 'text',
-		
-			success: function (){},
-			error: function(){},
-			
-			// Wait until request is done.
-			complete: function(data){
-				// Parse json object
-				achievementArray = JSON.parse(data.responseText);
-				console.log("finished api call to achievements");
-			}
-		});
-		
-		return achievementArray;
-}
 
 
-/* Find the achievements in the achievement array and find the corresponding 
-index to avoid extra looping for the other player's achievement arrays */	
-function findFractalAchievementIndex(achievementArray){
-	
-	var indexArray = []
-	
-	/* Reverse might be faster due to the recent nature of these achievements? */
-	for(var i = 0, length = achievementArray.length; i < length; i++){
-		switch(achievementArray[i].id){
-			case 2965:
-				indexArray[0] = i;
-				console.log(i);
-				break;
-			case 2894:
-				indexArray[1] = i;
-				console.log(i);
-				break;
-			case 2217:
-				indexArray[2] = i;
-				console.log(i);
-				break;
-			case 2415:
-				indexArray[3] = i;
-				console.log(i);
-				break;
-		} 
-	}
-	
-	console.log("currently in indexarray");
-	console.log(indexArray[0]);
-	console.log(indexArray[1]);
-	console.log(indexArray[2]);
-	console.log(indexArray[3]);
-	return indexArray;
-}
-
-
-/* Retrieves all information about all achievements of a given account. */
-function retrieveAccountName(apiKey){
-	
-		var accountName;
-	
-		$.ajax({
-		type: "GET",
-		async: false,
-		url: "https://api.guildwars2.com/v2/account?access_token=" + apiKey,
-		cache: false,
-		dataType: 'text',
-		
-			success: function (){},
-			error: function(){},
-			
-			// Wait until request is done.
-			complete: function(data){
-				// Parse json object
-				console.log("API" + apiKey);
-				
-				console.log(data);
-				
-				var accountInfo = JSON.parse(data.responseText);
-				accountName = accountInfo.name;
-			}
-		});
-		
-		return accountName;
-}
 
 
 

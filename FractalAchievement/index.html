@@ -1,19 +1,21 @@
-<!DOCTYPE html>
+<html>
 
-<html lang="en">
     <head>
+		<title>Fractal achievement crossref</title>
         <meta charset="utf-8" />
-        <link rel="stylesheet" type ="text/css" href="styles.css"> 
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     
     </head>
     
     <body >
+	
+		<div id="error" class="error"></div>
     
-        <h1 style="font-family: gisha;">Fractal Achievement Crossref</h1>
-        <form id="apiform" action="form_action.asp" style="font-family: gisha">
-        Your group's API keys:
+        <h1>Fractal Achievement Crossref</h1>
+        <form id="apiform">
+        <p>Your group's API keys:
         <br>
-        Please specift at least two group members to compare.
+        Please specify at least two group members to compare.</p>
             <br>
             <br>
             1: <input type="text" name="mem1" value="" id ="1">
@@ -31,12 +33,10 @@
             5: <input type="text" name="mem5" value="" id ="5">
         </form>
         <br>
-        <button onclick="getUserAPI()" style="font-family: gisha">Go!</button>
-        
-        <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
-        <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-        <!-- load scripts at the bottom of your page -->
-        <script src="site.js"></script>
+		<button onclick="getUserAPI()">Go!</button> 
+    
+	</body>
+	
+   <script src="site.js"></script>
 
-    </body>
 </html>
