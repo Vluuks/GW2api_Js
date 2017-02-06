@@ -102,6 +102,7 @@ function verifyApi(apiKey){
 						for(var i = 0; i <apiResult.permissions.length; i++){
 							
 							// Check for the necessary permissions
+							// Possible permissions can be found at https://wiki.guildwars2.com/wiki/API:2/tokeninfo
 							switch(apiResult.permissions[i]){
 								case "characters":
 									permissionCount++;
@@ -127,16 +128,221 @@ function verifyApi(apiKey){
 				}    
 			});
 		}
-		// If API key didn't pass regex it's can never be valid
+		// If API key didn't pass regex it can never be valid
 		else{
 			return false;
 		}
 }
 
+/* With help of the achievement index, retrieve the actual status of the fractal achievement. 
+The numbers in the bits array indicate the completed indices of the achievement, ie index 0 
+is the first achievement.*/
+function retrieveFractalAchievementStatus(apiKeyArray){
+
+	// Dictionary to store account, achievementinfo pair
+	var accountAchievementDictionary = {};
+	var accountNameArray = []
+	
+	// Retrieve fractal achievements for every account.
+	for(var i = 0; i < apiKeyArray.length; i++){
+		(function(i){ // Anonymous function for closure
+		
+			if(apiKeyArray[i]){
+				
+				console.log("Current API key in loop" + apiKeyArray[i]);
+				
+				// Retrieve the achievement information from the API
+				var achievementArray = retrieveAchievementAPI(apiKeyArray[i]);
+				
+				// Get indices for this specific ApiKey because they differ across accounts
+				var indexArray = findFractalAchievementIndex(achievementArray);
+				
+				var fractalInitiate = [];
+				var fractalAdept = [];
+				var fractalExpert = [];
+				var fractalMaster = [];
+				
+				// Get achievement bits using the indices
+				fractalInitiate = achievementArray[indexArray[0]].bits;
+				fractalAdept = achievementArray[indexArray[1]].bits;
+				fractalExpert = achievementArray[indexArray[2]].bits;
+				fractalMaster = achievementArray[indexArray[3]].bits;
+				
+				// Concatenate arrays
+				var fractalTotal = fractalInitiate.concat(fractalAdept, fractalExpert, fractalMaster);
+				
+				// Get name and put it in the dictionary
+				var accountName = retrieveAccountName(apiKeyArray[i]);
+				accountNameArray[i] = accountName;
+				
+				accountAchievementDictionary[accountName] = fractalTotal;
+				console.log( "Full array" + accountAchievementDictionary[accountName]);
+				
+				// Debugging printing to console
+				var arr = accountAchievementDictionary[accountName];
+				var arrlength = arr.length;
+				var alles = "";
+				
+				for(var i = 0; i < arrlength; i++){
+					alles += (arr[i] + " ");
+				}
+				
+				console.log("Alles: " + alles);
+				
+			}
+		})(i); // Anonymous function for closure
+	}
+	
+	displayData(accountNameArray, accountAchievementDictionary);
+}
+
+/* Retrieves all information about all achievements of a given account. */
+function retrieveAchievementAPI(apiKey){
+	
+		var achievementArray;
+	
+		$.ajax({
+		type: "GET",
+		async: false,
+		url: "https://api.guildwars2.com/v2/account/achievements?access_token=" + apiKey,
+		cache: false,
+		dataType: 'text',
+		
+			success: function (){},
+			error: function(){},
+			
+			// Wait until request is done.
+			complete: function(data){
+				// Parse json object
+				achievementArray = JSON.parse(data.responseText);
+				console.log("finished api call to achievements");
+			}
+		});
+		
+		return achievementArray;
+}
+
+/* Find the achievements in the achievement array and find the corresponding 
+index to avoid extra looping for the other player's achievement arrays */	
+function findFractalAchievementIndex(achievementArray){
+	
+	var indexArray = []
+	
+	/* Reverse might be faster due to the recent nature of these achievements? */
+	for(var i = 0, length = achievementArray.length; i < length; i++){
+		switch(achievementArray[i].id){
+			case 2965:
+				indexArray[0] = i;
+				console.log(i);
+				break;
+			case 2894:
+				indexArray[1] = i;
+				console.log(i);
+				break;
+			case 2217:
+				indexArray[2] = i;
+				console.log(i);
+				break;
+			case 2415:
+				indexArray[3] = i;
+				console.log(i);
+				break;
+		} 
+	}
+	
+	console.log("currently in indexarray");
+	console.log(indexArray[0]);
+	console.log(indexArray[1]);
+	console.log(indexArray[2]);
+	console.log(indexArray[3]);
+	return indexArray;
+}
+
+
+/* Retrieves all information about all achievements of a given account. */
+function retrieveAccountName(apiKey){
+	
+		var accountName;
+	
+		$.ajax({
+		type: "GET",
+		async: false,
+		url: "https://api.guildwars2.com/v2/account?access_token=" + apiKey,
+		cache: false,
+		dataType: 'text',
+		
+			success: function (){},
+			error: function(){},
+			
+			// Wait until request is done.
+			complete: function(data){
+				// Parse json object
+				console.log("API" + apiKey);
+				
+				console.log(data);
+				
+				var accountInfo = JSON.parse(data.responseText);
+				accountName = accountInfo.name;
+			}
+		});
+		
+		return accountName;
+}
+
+function compareToAchievementList(){
+	
+	
+}
 
 
 
-
+/* Displays the data as obtained by the API calls in a table, showing which ones are done and which ones are not. */
+function displayData(accountNameArray, accountAchievementDictionary){
+	
+	// Create base table
+	var myTableDiv = document.getElementById("resulttable");
+    var table = document.createElement('TABLE');
+    var tableBody = document.createElement('TBODY');
+	
+	table.border = '1';
+    table.appendChild(tableBody);
+	
+	// Initialize variables
+	var heading = new Array();
+	var data = new Array();
+	
+	// Get the amount of accounts from the accountNameArray to make headers
+	heading[0] = "Fractal number";
+	for(var i = 0; i < accountNameArray.length; i++){
+		heading[i+1] = accountNameArray[i];
+		
+		// Insert array from dictionary into data table
+		data[i] = accountAchievementDictionary[accountNameArray[i]];
+	}
+	
+	// Generate table columns
+	var tr = document.createElement('TR');
+    tableBody.appendChild(tr);
+    for (i = 0; i < heading.length; i++) {
+        var th = document.createElement('TH')
+        th.width = '75';
+        th.appendChild(document.createTextNode(heading[i]));
+        tr.appendChild(th);
+    }
+	
+	// Create rows
+    for (i = 0; i < data.length; i++) {
+        var tr = document.createElement('TR');
+        for (j = 0; j < data[i].length; j++) {
+            var td = document.createElement('TD');
+            td.appendChild(document.createTextNode(data[i][j]+1)); // add 1 because its referenced by the index
+            tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+    }  
+    myTableDiv.appendChild(table);
+	
+}
 
 
 
