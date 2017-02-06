@@ -152,7 +152,7 @@ function retrieveFractalAchievementStatus(apiKeyArray){
 				console.log("Current API key in loop" + apiKeyArray[i]);
 				
 				// Retrieve the achievement information from the API
-				var achievementArray = retrieveAchievementAPI(apiKeyArray[i]);
+				var achievementArray = retrieveAchievementAPI(apiKeyArray[i]); // let ajax oncomplete call findFractalAchievementIndex
 				
 				// Get indices for this specific ApiKey because they differ across accounts
 				var indexArray = findFractalAchievementIndex(achievementArray);
@@ -169,14 +169,32 @@ function retrieveFractalAchievementStatus(apiKeyArray){
 				fractalMaster = achievementArray[indexArray[3]].bits;
 				
 				// Concatenate arrays
-				var fractalTotal = fractalInitiate.concat(fractalAdept, fractalExpert, fractalMaster);
-				
+				var fractalTotal = fractalInitiate.concat(fractalAdept, fractalExpert, fractalMaster); // verify that concatenation is working as expected
+								
 				// Get name and put it in the dictionary
 				var accountName = retrieveAccountName(apiKeyArray[i]);
 				accountNameArray[i] = accountName;
 				
 				accountAchievementDictionary[accountName] = fractalTotal;
 				console.log( "Full array" + accountAchievementDictionary[accountName]);
+				
+				//Add to array of fixed lenth to make showing data easier
+				// Set indices in the the total array to true
+				
+				
+				// Dictionary to store the finished arrays
+				var finishedAchievementsPerAccount={};
+				
+				// Initialize array full of false
+				for(var i = 0; i < 100; i++){
+					finishedAchievementsPerAccount[accountName][i] = false;
+				}
+				
+				// Then for every index returned by the API, turn into true
+				for (var i = 0; fractalTotal.length; i++){
+					  finishedAchievementsPerAccount[accountName][fractalTotal[i]] = true;
+				}
+				
 				
 				// Debugging printing to console
 				var arr = accountAchievementDictionary[accountName];
