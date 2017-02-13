@@ -3,15 +3,18 @@
 // [382,381,391,383,392,384,393,385,394,386,395,387,396,388,397,389,398,390,399,1189,1195,1191,1197,1194,1190,1196,1193,1198,1192,2493,2567,2206,2346,2156,2519,2475,2158,2379,2965,2894,2217,2415,2344,2434,2248,2408,3051,3047,3080,3149,3101]
 // FRACS 2965,2894,2217,2415
 
-
 /* Global scope variables needed to track the status of the AJAX requests in the code. 
 Due to their asynchronous nature and the use of loops, there needs to be a callback
 that tracks whether every API key supplied has been checked and the achievements
 have been retrieved, so that the data can be displayed and the array containing the
-data is not still null/undefined */
+data is not still null/undefined. The callback must have access to the final dictionary 
+and the array with account names to do this. */
 
-var status = false;
 var apiEntries = 0; 
+var achievementDictionary = {};
+
+
+
 
 /* Obtain player's API keys from input field on website and check how many were
 actually supplied (2 minimum), also check whether they are valid and not missing 
@@ -32,7 +35,6 @@ function getUserAPI(){
         }
     }
 	
-    
     // Check if user specified at least 2 API keys
     if(missingApi > 3){
 		$('#error').text("Please specify at least 2 valid API keys to allow comparison.");
@@ -45,13 +47,11 @@ function getUserAPI(){
     // If the first field is not empty and there are at least 2 API keys present
     else if (missingApi <= 3 && elements.item(0) != ""){ 
     	
-		console.log("entered else, proceeding to validation");
-		
         // Update global variable with the amount of supplied API keys
         apiEntries = 5 - missingApi;
         
     	// Validate API key for every key in array
-        var apiStatus = false;
+        var apiStatus = true;
     	for(var i = 0; i < apiKeyArray.length ; i++){
     		
     		console.log("Checking if API valid:" + apiKeyArray[i]);
@@ -79,6 +79,7 @@ function getUserAPI(){
 }
 
 
+
 /* Check if API key is of a valid format and if so, check if the needed permissions were given. */
 function verifyApi(apiKey){
 	
@@ -87,14 +88,13 @@ function verifyApi(apiKey){
 
 			$.ajax({
 			type: "GET",
-			async: true,
+			async: false,
 			url: "https://api.guildwars2.com/v2/tokeninfo?access_token=" + apiKey,
 			cache: false,
 			dataType: 'text',
 			
 				success: function (){},
 				error: function(){
-					return false;
 				},
 				// Check if it's a valid key even if it passed regex
 				complete: function(data){
@@ -130,6 +130,8 @@ function verifyApi(apiKey){
 							}
 						}
 						
+						console.log(permissionCount);
+						
 						// Check if permission requirements were met
 						if(permissionCount == 4)
 							return true;
@@ -144,6 +146,7 @@ function verifyApi(apiKey){
 			return false;
 		}
 }
+
 
 /* With help of the achievement index, retrieve the actual status of the fractal achievement. 
 The numbers in the bits array indicate the completed indices of the achievement, ie index 0 
@@ -166,44 +169,31 @@ function retrieveFractalAchievementStatus(apiKeyArray){
 				var accountName = retrieveAccountName(apiKeyArray[i]);
 				accountNameArray[i] = accountName;
                 
-                // Retrieve the achievement information from the API
-				var fractalTotal = retrieveAchievementAPI(apiKeyArray[i]);
-                					
-				// Dictionary to store the finished arrays
-				var finishedAchievementsPerAccount={};
-				finishedAchievementsPerAccount[accountName] = fractalTotal;
-                console.log(i + fractalTotal);
+                // Retrieve the achievement information from the API and store in dictionary
+				achievementDictionary[accountName] = retrieveAchievementAPI(apiKeyArray[i], i);
 			}
-		})(i); // Anonymous function for closure
+		})(i); 
+	}
+}
+
+/* The callback is called when every API key was checked, the achievements were retrieved and
+inserted into the dictionary. When the max is attained, it waits slightly to make sure the return 
+statement after the callback had time to execute and then it calls the datadisplay function. */
+function callback(i){
+	
+    if(i == apiEntries-1){
+		
+		console.log(i);
+		window.setTimeout(3000);
+		console.log('cb' + achievementDictionary);
+        displayData(achievementDictionary);
 	}
 	
-    
-    // This is called before AJAX requests are done, so there needs to be a a callback of some kind // TODO
-    
-    // Determine amount of keys/entries
-    // Pass i to ajax chain
-    // return status and i in oncomplete/succes 
-    // when i == max then proceed to display of data
-    
-    // Pass account names and dictionary on
-	displayData(accountNameArray, finishedAchievementsPerAccount);
 }
 
-
-function updateStatus(i){
-    
-    if(i == maxi)
-        globalStatus = true;
-    else
-        globalStatus = false;
-    
-    // if the status is true
-    // show data
-    
-}
 
 /* Retrieves all information about all achievements of a given account. */
-function retrieveAchievementAPI(apiKey){
+function retrieveAchievementAPI(apiKey, index){
 	
 		$.ajax({
 		type: "GET",
@@ -212,20 +202,16 @@ function retrieveAchievementAPI(apiKey){
 		cache: false,
 		dataType: 'text',
 		
-			success: function (){},
-            
+			success: function(data){
+			},
             // If something went wrong
 			error: function(){
+				alert("Unfortunately, something went wrong with the API call");
 				return false;
 			},
-			
-			// Wait until request is fully done
 			complete: function(data){
 				var achievementArray = JSON.parse(data.responseText);
-				console.log("finished api call to achievements");
-                
-                updateStatus(i);
-				return findFractalAchievementIndex(achievementArray); 
+				return findFractalAchievementIndex(achievementArray, index); 
 			}
 		});
 }
@@ -233,7 +219,7 @@ function retrieveAchievementAPI(apiKey){
 
 /* Find the achievements in the achievement array and find the corresponding 
 index to avoid extra looping for the other player's achievement arrays */	
-function findFractalAchievementIndex(achievementArray){
+function findFractalAchievementIndex(achievementArray, index){
 	
 	var indexArray = [];
 	
@@ -282,38 +268,44 @@ function findFractalAchievementIndex(achievementArray){
 	console.log(achievementArray[indexArray[2]].bits);
 	console.log(achievementArray[indexArray[3]].bits);
 	
-	// Concatenate arrays
-	var fractalTotal = fractalInitiate.concat(fractalAdept, fractalExpert, fractalMaster);
-    
+	tempArray = [fractalInitiate, fractalAdept, fractalExpert, fractalMaster];
+	
     // Transform separate indices into one big array
-    return transformArray(fractalTotal);
+    return transformArray(tempArray, index); // pass then concat afterTODO
 }
 
-function transformArray(fractalTotal){
+
+
+/* This function takes the array with all the indices of achievements that have not been
+completed yet and transforms it into an array of booleans with true for complete and 
+false for incomplete, so that it can be rendered more easily into a table */
+function transformArray(tempArray, index){
     
-    // Initialize array full of false
-    achievementArray = new Array(100);
-    for(var i = 0; i < 100; i++){
-        achievementArray[i] = false;
-    }
+	completeAchievementArray = [];
+	
+	for(indexArray in tempArray){
+		
+		achievementArray = new Array(25);
+		for(var i = 0; i < 100; i++)
+			achievementArray[i] = true;
     
-    // Indices corresponding with achievements 0-24, 25-49, 50-74, 75-99
-    // Then for every index returned by the API, turn into true
-    for (var i = 0; i < fractalTotal.length; i++){
-        
-        // Different parts of the array represent the different fractal tiers
-        if(i < 25)
-            achievementArray[fractalTotal[i]] = true;
-        if(24 < i < 50)
-            achievementArray[fractalTotal[i] + 25] = true;
-        if(49 < i < 75)
-            achievementArray[fractalTotal[i] + 50] = true;
-        if(74 < i < 99)
-            achievementArray[fractalTotal[i] + 75] = true;
-    }
-    
-    console.log(achievementArray);
-    return achievementArray;
+		for (var i = 0; i < indexArray.length; i++){
+			
+			achievementArray[indexArray[i]] = false;
+			
+		
+		}
+		
+		console.log(achievementArray);
+		completeAchievementArray = completeAchievementArray.concat(achievementArray);
+	
+	}
+	
+	console.log(completeAchievementArray);
+	
+	// Now that we have finished doing all actions, notify the callback function 
+	callback(index);
+    return completeAchievementArray;
     
 }
 
@@ -330,27 +322,36 @@ function retrieveAccountName(apiKey){
 		cache: false,
 		dataType: 'text',
 		
-			success: function (){},
-			error: function(){},
-			
-			// Wait until request is done.
-			complete: function(data){
-				// Parse json object
-				console.log("API" + apiKey);
-				
+			success: function (data){
 				console.log(data);
-				
+			},
+			error: function(){
+				alert("Unfortunately, something went wrong with the API call");
+			},
+			complete: function(data){
+				console.log(data);
 				var accountInfo = JSON.parse(data.responseText);
 				accountName = accountInfo.name;
+				return accountName;
 			}
 		});
-		
-		return accountName;
 }
 
 
 /* Displays the data as obtained by the API calls in a table, showing which ones are done and which ones are not. */
-function displayData(accountNameArray, accountAchievementDictionary){
+function displayData(accountAchievementDictionary){
+	
+	// Get account names from the dictionary
+	var accountNameArray = [];
+	for (var key in accountAchievementDictionary) {
+		if (accountAchievementDictionary.hasOwnProperty(key)) {
+			accountNameArray.push(key);
+		}
+	}
+	
+	console.log(accountNameArray[0]);
+	
+	console.log(accountAchievementDictionary[accountNameArray[0]]);
 	
 	// Create base table
 	var myTableDiv = document.getElementById("resulttable");
