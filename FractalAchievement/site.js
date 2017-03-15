@@ -14,8 +14,6 @@ var apiEntries = 0;
 var achievementDictionary = {};
 
 
-
-
 /* Obtain player's API keys from input field on website and check how many were
 actually supplied (2 minimum), also check whether they are valid and not missing 
 permissions needed to access achievement status. */
@@ -281,23 +279,34 @@ completed yet and transforms it into an array of booleans with true for complete
 false for incomplete, so that it can be rendered more easily into a table */
 function transformArray(tempArray, index){
     
+// only the first turns to false 
+    
+    
 	completeAchievementArray = [];
 	
-	for(indexArray in tempArray){
+	for(var i = 0; i < 3; i++){
 		
+        incompleteIndexArray = tempArray[i];
+        
+        tempArr2 = [];
+        
+        console.log(incompleteIndexArray);
+        console.log("indexarr length" + incompleteIndexArray.length);
+
 		achievementArray = new Array(25);
 		for(var i = 0; i < 100; i++)
 			achievementArray[i] = true;
     
-		for (var i = 0; i < indexArray.length; i++){
+		for (var j = 0; j <  incompleteIndexArray.length; j++){
 			
-			achievementArray[indexArray[i]] = false;
-			
+			achievementArray[incompleteIndexArray[i]] = false;
 		
 		}
 		
-		console.log(achievementArray);
-		completeAchievementArray = completeAchievementArray.concat(achievementArray);
+		console.log("new" + achievementArray);
+		completeAchievementArray.concat(achievementArray);
+        
+        
 	
 	}
 	

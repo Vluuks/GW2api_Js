@@ -6,9 +6,9 @@ var userapi;
 var apistatus;
 
 // equipment status
-var characterarray;
-var equipmentobject;
-var itemobject;
+var characterArray;
+var equipmentObject;
+var itemObject;
 var ascendedcheckarray;
 var ascendedweaponcheckarray;
 var gearcheck;
@@ -32,6 +32,7 @@ var weaponagonycount;
 
 
 // obtain user's API code from input field on website and check if it is valid
+// add REGEX
 function getuserapi(){
 	
 	// obtain API key from input field and trim if necessary
@@ -122,24 +123,24 @@ function fetchcharacters(userapi){
 						console.log(" fetching character info complete");
 						
 				// convert json array to javascript array
-				characterarray = JSON.parse(data.responseText);
-				console.log(characterarray);
-				console.log(characterarray.length);
+				characterArray = JSON.parse(data.responseText);
+				console.log(characterArray);
+				console.log(characterArray.length);
 				
 				// start fetching equipment
-				fetchequipment(characterarray, userapi);
+				fetchequipment(characterArray, userapi);
 			}    
 	});
 }
 
 
 // fetch class, age, and level of character
-function fetchcharinfo(a_characterarray, userapi){
+function fetchcharinfo(a_characterArray, userapi){
 	
-	for (l = 0; l < a_characterarray.length; l++) { //TODO
+	for (l = 0; l < a_characterArray.length; l++) { //TODO
 
         // create url to fetch information from
-        var characterurl = "https://api.guildwars2.com/v2/characters/" + a_characterarray[l] + "?access_token=" + userapi; 
+        var characterurl = "https://api.guildwars2.com/v2/characters/" + a_characterArray[l] + "?access_token=" + userapi; 
         
 		// use this url for ajax request
         $.ajax({
@@ -159,9 +160,9 @@ function fetchcharinfo(a_characterarray, userapi){
 					var characterobject = JSON.parse(data.responseText);
 					
 					// store character info and character age in dictionary
-					charinfodictionary[a_characterarray[l]] = characterobject.level + " " + characterobject.race; 
-					classdictionary[a_characterarray[l]] = characterobject.profession;
-					agedictionary[a_characterarray[l]] = (characterobject.age / 3600).toFixed(0);
+					charinfodictionary[a_characterArray[l]] = characterobject.level + " " + characterobject.race; 
+					classdictionary[a_characterArray[l]] = characterobject.profession;
+					agedictionary[a_characterArray[l]] = (characterobject.age / 3600).toFixed(0);
             }
         });
     }
@@ -169,15 +170,15 @@ function fetchcharinfo(a_characterarray, userapi){
 
 
 // request information about character equipment
-function fetchequipment(a_characterarray, userapi){
+function fetchequipment(a_characterArray, userapi){
 
     // loops over character names in character array
     // requests equipment json object for every character
-    // a_characterarray.length
+    // a_characterArray.length
     for (i = 0; i < 3 ; i++) {
 
         // create url character equipment
-        var equipurl = "https://api.guildwars2.com/v2/characters/" + a_characterarray[i] + "/equipment?access_token=" + userapi;
+        var equipurl = "https://api.guildwars2.com/v2/characters/" + a_characterArray[i] + "/equipment?access_token=" + userapi;
         console.log(equipurl);
         
         // perform ajax request on url
@@ -197,15 +198,15 @@ function fetchequipment(a_characterarray, userapi){
 				complete: function(data){
 							
 					// zet json array om naar echt js array
-					equipmentobject = JSON.parse(data.responseText);
+					equipmentObject = JSON.parse(data.responseText);
 					
 					// maak dictionary entry aan op basis van character naam, voor elke character. Als het goed is heb ik dan 27 entries.
-					equipmentdictionary[a_characterarray[i]] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // size 12, want 12 equipment pieces
-					ascendedweapondictionary[a_characterarray[i]] = [0, 0, 0, 0];
+					equipmentdictionary[a_characterArray[i]] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // size 12, want 12 equipment pieces
+					ascendedweapondictionary[a_characterArray[i]] = [0, 0, 0, 0];
 					
 					// check de armor op basis van de net verkregen equipment object van de character
-					fetchcharinfo(a_characterarray, userapi);
-					checkequipment(equipmentobject, a_characterarray[i], userapi);
+					fetchcharinfo(a_characterArray, userapi);
+					checkequipment(equipmentObject, a_characterArray[i], userapi);
 					
             }
         });
@@ -213,7 +214,7 @@ function fetchequipment(a_characterarray, userapi){
 }
 
 // checks whether character equipment is of ascended rarity
-function checkequipment(an_equipmentobject, charactername, userapi){
+function checkequipment(an_equipmentObject, charactername, userapi){
     
 	// initialize en reset gear
 	ascendedcheckarray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -226,93 +227,93 @@ function checkequipment(an_equipmentobject, charactername, userapi){
 	weaponnamedictionary[charactername] = [];
 
     // loop over the equipment object, voor elke equipment slot, voer een check uit
-    for(var j = 0; j < an_equipmentobject.equipment.length; j++){
+    for(var j = 0; j < an_equipmentObject.equipment.length; j++){
     	
     	console.log("loop ingegaan check per piece")
         
-        switch(an_equipmentobject.equipment[j].slot){
+        switch(an_equipmentObject.equipment[j].slot){
 	
 			// armor
 			case "Coat":
-				var coat = an_equipmentobject.equipment[j].id;
+				var coat = an_equipmentObject.equipment[j].id;
 				checkascended(coat, "Coat", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Helm":
-				var helm = an_equipmentobject.equipment[j].id;
+				var helm = an_equipmentObject.equipment[j].id;
 				checkascended(helm, "Helm", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;		
 			case "Shoulders":
-				var shoulders = an_equipmentobject.equipment[j].id;
+				var shoulders = an_equipmentObject.equipment[j].id;
 				checkascended(shoulders, "Shoulders", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Gloves":
-		        var gloves = an_equipmentobject.equipment[j].id;
+		        var gloves = an_equipmentObject.equipment[j].id;
 				checkascended(gloves, "Gloves", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Leggings":
-				var leggings = an_equipmentobject.equipment[j].id;
+				var leggings = an_equipmentObject.equipment[j].id;
 				checkascended(leggings, "Leggings", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Boots":
-				var boots = an_equipmentobject.equipment[j].id;
+				var boots = an_equipmentObject.equipment[j].id;
 				checkascended(boots, "Boots", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 				
 			// trinkets	
 			case "Backpack":
-				var backpiece = an_equipmentobject.equipment[j].id;
+				var backpiece = an_equipmentObject.equipment[j].id;
 				checkascended(backpiece, "Backpack", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Accessory1":
-				var acc1 = an_equipmentobject.equipment[j].id;
+				var acc1 = an_equipmentObject.equipment[j].id;
 				checkascended(acc1, "Accessory1", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Accessory2":
-				var acc2 = an_equipmentobject.equipment[j].id;
+				var acc2 = an_equipmentObject.equipment[j].id;
 				checkascended(acc2, "Accessory2", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Ring1":
-				var ring1 = an_equipmentobject.equipment[j].id;
+				var ring1 = an_equipmentObject.equipment[j].id;
 				checkascended(ring1, "Ring1", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Ring2":
-				var ring2 = an_equipmentobject.equipment[j].id;
+				var ring2 = an_equipmentObject.equipment[j].id;
 				checkascended(ring2, "Ring2", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 			case "Amulet":
-				var amulet = an_equipmentobject.equipment[j].id;
+				var amulet = an_equipmentObject.equipment[j].id;
 				checkascended(amulet, "Amulet", charactername);
-				countarmoragony(an_equipmentobject.equipment[j].infusions, charactername);
+				countarmoragony(an_equipmentObject.equipment[j].infusions, charactername);
 				break;
 				
 			// weapons
 			case "WeaponA1":
-				checkascended(an_equipmentobject.equipment[j].id, "WeaponA1", charactername);
-				weaponset1agonycount += countweaponagony(an_equipmentobject.equipment[j].infusions);
+				checkascended(an_equipmentObject.equipment[j].id, "WeaponA1", charactername);
+				weaponset1agonycount += countweaponagony(an_equipmentObject.equipment[j].infusions);
 				break;
 			case "WeaponA2":
-				checkascended(an_equipmentobject.equipment[j].id, "WeaponA2", charactername);
-				weaponset1agonycount += countweaponagony(an_equipmentobject.equipment[j].infusions);
+				checkascended(an_equipmentObject.equipment[j].id, "WeaponA2", charactername);
+				weaponset1agonycount += countweaponagony(an_equipmentObject.equipment[j].infusions);
 				break;
 			
 			case "WeaponB1":
-				checkascended(an_equipmentobject.equipment[j].id, "WeaponB1", charactername);
-				weaponset2agonycount += countweaponagony(an_equipmentobject.equipment[j].infusions);
+				checkascended(an_equipmentObject.equipment[j].id, "WeaponB1", charactername);
+				weaponset2agonycount += countweaponagony(an_equipmentObject.equipment[j].infusions);
 				break;
 			case "WeaponB2":
-				checkascended(an_equipmentobject.equipment[j].id, "WeaponB2", charactername);
-				weaponset2agonycount += countweaponagony(an_equipmentobject.equipment[j].infusions);
+				checkascended(an_equipmentObject.equipment[j].id, "WeaponB2", charactername);
+				weaponset2agonycount += countweaponagony(an_equipmentObject.equipment[j].infusions);
 				break;
 		}
 
@@ -349,67 +350,67 @@ function itemTypeSwitch(itemtype, charactername){
 	switch (itemtype){
 		case "Coat":	
 			ascendedcheckarray[0] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Helm":
 			ascendedcheckarray[1] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Shoulders":
 			ascendedcheckarray[2] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Gloves":
 			ascendedcheckarray[3] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Leggings":
 			ascendedcheckarray[4] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Boots":
 			ascendedcheckarray[5] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Backpack":
 			ascendedcheckarray[6] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Accessory1":
 			ascendedcheckarray[7] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Accessory2":
 			ascendedcheckarray[8] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Ring1":
 			ascendedcheckarray[9] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Ring2":
 			ascendedcheckarray[10] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;
 		case "Amulet":
 			ascendedcheckarray[11] = 1;
-			itemnamedictionary[charactername].push(itemobject.name);
+			itemnamedictionary[charactername].push(itemObject.name);
 			break;	
 		case "WeaponA1":
 			ascendedweaponcheckarray[0] = 1;
-			weaponnamedictionary[charactername].push(itemobject.name);
+			weaponnamedictionary[charactername].push(itemObject.name);
 			break;	
 		case "WeaponA2":
 			ascendedweaponcheckarray[1] = 1;
-			weaponnamedictionary[charactername].push(itemobject.name);
+			weaponnamedictionary[charactername].push(itemObject.name);
 			break;	
 		case "WeaponB1":
 			ascendedweaponcheckarray[2] = 1;
-			weaponnamedictionary[charactername].push(itemobject.name);
+			weaponnamedictionary[charactername].push(itemObject.name);
 			break;	
 		case "WeaponB2":
 			ascendedweaponcheckarray[3] = 1;
-			weaponnamedictionary[charactername].push(itemobject.name);
+			weaponnamedictionary[charactername].push(itemObject.name);
 			break;	
 	}
 	
@@ -436,9 +437,9 @@ function checkascended(itemid, itemtype, charactername){
 				complete: function(data){
 							
 					// zet json array om naar js array
-					itemobject = JSON.parse(data.responseText);
+					itemObject = JSON.parse(data.responseText);
 					
-					switch(itemobject.rarity){
+					switch(itemObject.rarity){
 						case "Ascended":
 							itemTypeSwitch(itemtype, charactername);
 							break;
